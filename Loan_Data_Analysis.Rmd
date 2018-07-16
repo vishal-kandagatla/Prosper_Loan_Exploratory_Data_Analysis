@@ -1,0 +1,817 @@
+---
+title: "Exploratory Data Analysis with Prosper Loan Dataset"
+author: "Vishal Kandagatla"
+date: "May 9, 2018"
+output: html_document
+---
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+The Following is an analysis of data made on Prosper Company's Loan Prediction data set.
+Prosper is America's first marketplace lending platform. Get a personal loan at a low rate.
+Prosper personal loans require generally good credit; this peer-to-peer lender grades your loan so investors can decide whether to fund it.
+
+
+
+Here are Some of the features of the loan offered by Prosper:
+
+1. Low interest rate
+2. Fixed term-3 or 5 years*
+3. Single monthly payment
+4. No hidden fees or prepayment penalties
+
+
+We first read the dataset with the following command:
+
+
+```{r }
+pld <- read.csv('prosperLoanData.csv', sep = ",")
+```
+
+
+
+To display the number of observations in the dataset:
+
+
+
+```{r }
+dim(pld)
+```
+
+
+There are 82675 observations and 85 variables.
+
+
+To display the List of variables:
+
+
+```{r }
+install.packages('ggplot2', repos = "http://cran.us.r-project.org")
+library(ggplot2)
+
+install.packages('ggthemes', repos = "http://cran.us.r-project.org")
+library(ggthemes)
+
+names(pld)
+
+```
+
+
+The 85 variables are listed above.
+
+
+
+Here is the summary of data obtained from the Prosper official websit:
+
+After a borrower submits a loan application, Prosper first obtains a credit report from TransUnion to evaluate whether the applicant meets the underwriting criteria Prosper has established in conjunction with WebBank. As of December 23, 2016, applicants are subject to the following minimum eligibility criteria:
+
+- Minimum FICO credit score of 640 (TransUnion FICO 08 score)
+- Debt-to-income ratio below 50%
+- Stated income greater than $0
+- No bankruptcies filed within the last 12 months
+- Fewer than seven credit bureau inquiries within the last 6 months
+- Minimum of three open trades reported on their credit report
+
+
+Repeat borrowers must meet several additional criteria:
+
+- No previous loans on the Prosper platform which have been charged-off
+- Must not have been declined for a loan through Prosper within the last four months due to - - delinquency or returned payments on a previous loan through Prosper
+
+
+
+
+Summary of Loan Amounts
+
+
+```{r }
+summary(pld$LoanOriginalAmount)
+```
+
+
+Min Loan amount is $1000
+Max Loan amount is $35000
+
+Prosper approves loans in the range $1000 to $35000.
+
+
+
+Plotting Loan amount 
+
+
+```{r }
+ggplot(data = pld,aes(LoanOriginalAmount))+
+  geom_histogram(binwidth=500,color=I('orange')) +
+  scale_x_continuous(breaks=seq(0,35000,4000),lim=c(0,30000))
+```
+We see spikes at $4000 and $15000 mark. This is because of the fact that prosper approves loans below $4000 without any collateral.
+They need more documentation and proof of repayment for loans over $15,000 and hence less number of loans are approved.
+
+
+
+Summary of monthly payments made by the borrowers:
+
+
+```{r }
+summary(pld$MonthlyLoanPayment)
+```
+
+
+Here is a plot of the monthly payments made by the borrowers:
+
+
+```{r }
+ggplot(data=pld, aes(MonthlyLoanPayment))+
+  geom_histogram(binwidth=50,color=I('black'),fill=I('#F79420'))+
+  scale_x_continuous(limits=c(0,1500),breaks=seq(0,1500,100))
+```
+
+
+Most Loan Payments are made in the range $100 to $200
+
+
+
+Borrower Rate
+
+
+```{r }
+summary(pld$BorrowerRate)
+```
+
+
+Median borrower rate is 18.75%.
+
+
+Here is a plot of the borrower rate:
+
+
+```{r }
+ggplot(data=pld,aes(BorrowerRate)) + 
+  geom_histogram(color=I('black'),fill=I('#E69F00'))
+``` 
+
+
+Borrower rates typically lie between 0.1 and 0.3
+That is 10% to 30%
+
+Summary of the Loan Status of borrowers:
+
+
+```{r }
+summary(pld$LoanStatus)
+```
+
+
+We can plot this in the form a graph. The graph contains one variable:
+
+
+```{r }
+ggplot(data=pld,aes(reorder(LoanStatus, LoanStatus, function(x) length(x)))) +
+  geom_bar( color=I('black'),fill=I('#F0E442')) +
+    coord_flip()
+```
+
+
+Number of Cutomers who have been defaulted:
+
+
+```{r }
+nrow(pld[pld$LoanStatus=='Defaulted',])/nrow(pld)*100
+```
+
+
+1.11% of the Loans are Defaulted
+
+
+Number of people who make late payments
+
+
+```{r }
+nrow(subset(pld,  
+            LoanStatus=='Past Due (1-15 days)'  |
+            LoanStatus=='Past Due (16-30 days)' |
+            LoanStatus=='Past Due (31-60 days)' |
+            LoanStatus=='Past Due (61-90 days)' | 
+            LoanStatus=='Past Due (91-120 days)'|
+            LoanStatus=='Past Due (>120 days)'))/nrow(pld)*100
+
+```
+
+
+2.50% of people make late payments
+
+
+Prosper scores of the borrowers:
+
+
+```{r }
+summary(pld$ProsperScore)
+table(pld$ProsperScore)
+```
+
+
+Scores lie in the range 1 - 11. Median Score is 6. 
+
+However, Prosper has a set a minimum score of 6.4 for Loan approval.
+
+
+A plot of the customers Prosper Scores:
+
+
+```{r }
+ggplot(data=pld,aes(ProsperScore))+
+  geom_bar( color=I('black'),fill=I('#0072B2')) 
+```
+
+
+
+Here is a distribution of the borrower's income range:
+
+
+```{r }
+  pld$IncomeRange<-ordered(pld$IncomeRange,levels=c("Not employed",
+                                                  "$1-24,999",
+                                                  "$25,000-49,999",
+                                                  "$50,000-74,999",
+                                                  "75,000-99,999",
+                                                  "$100,000+"))
+  
+  ggplot(data=pld,aes(IncomeRange)) + 
+    geom_bar(color=I('black'),fill=I("#F79420"))
+```
+
+
+Most of the people who borrow a loan from Prosper have an income in the range $25000 - $75000.
+People who apply for loans having a income range over $100,000 are low in number.
+
+
+
+Summary of the Debt to Income Ratio:
+
+
+```{r }
+summary(pld$DebtToIncomeRatio)
+```
+
+
+Mean Debt to income ratio is 26%. That is borrowers, on an average spend 26% of their money and save the rest.
+
+
+Debt to Income Ratio Plot
+
+
+```{r }
+ggplot(data=pld,aes(DebtToIncomeRatio)) +
+  geom_histogram(binwidth=0.01,color=I('black'),fill=I('#F79420')) + 
+  xlim(0,1)
+```
+
+
+Most of the borrowers debt to income ratio lie in the range 0.15 to 0.30
+
+Prosper grants loans to those who have a good debt to income ratio.
+
+According to Prosper:
+ - Maximum debt-to-income ratio: 50% (excluding mortgage) is set for the borrower.
+
+Credit Score Range Lower Summary
+
+
+```{r }
+summary(pld$CreditScoreRangeLower)
+```
+
+
+Here is a plot of the Credit scores of the borrowers:
+
+
+```{r }
+ggplot(data=pld,aes(CreditScoreRangeLower)) + 
+  geom_histogram(binwidth=10,fill=I("#D55E00") ) + 
+  scale_x_continuous(breaks=seq(600,880,20))
+```
+
+
+Credit score for most people lie in the range 660-720. Prosper generally grants loans for people having good credit score. They have set a minimum credit score requirement of 640 if the loan has to be approved. Else the borrower has to present additional documents to be able to get his loan sanctioned.
+
+
+Here is the monthly income of the Prosper customers:
+
+
+```{r }
+summary(pld$StatedMonthlyIncome)
+  ggplot(data=pld,aes(StatedMonthlyIncome)) +       
+  geom_histogram(binwidth=500, color=I('black'), fill=I("#F79420") ) + 
+  xlim(0,10000)
+```
+
+
+Monthly incomes typically lie in the range $2500 - $7000.
+
+
+Bivariate Analysis:
+
+
+This is a plot of income range vs Loan Amount of the borrowers. 
+
+
+```{r }
+ggplot(aes(x = IncomeRange, y = LoanOriginalAmount), data=subset(pld, !is.na(IncomeRange))) +
+  geom_boxplot(alpha=1/100) +
+   geom_line(stat= 'summary', fun.y = mean, linetype = 2, color = 'blue')
+```
+
+
+We can make the following observations:
+
+1. Loans above $20,000 are granted for people with income range more than $100,000 in most of the situations.
+2. Prosper generally grants loans for people having income range more than $25000.
+3. Loans in the range of $30,000 are only granted for people having a yearly income of $100,000 or more.
+
+
+
+An analysis of the Debt to income ratio and Credit Score range:
+
+We first make 2 columns that contain the mean and median values of the credit scores.
+
+Here is a sample of our credit score data:
+
+
+```{r}
+library(dplyr)
+
+pld.fc_new <- pld %>% 
+  group_by(DebtToIncomeRatio) %>%
+  summarise(CreditScoreRangeLower_mean = mean(CreditScoreRangeLower),
+            CreditScoreRangeLower_median = median(CreditScoreRangeLower),
+            n=n()) %>%
+  arrange(DebtToIncomeRatio)
+
+head(pld.fc_new)
+
+```
+
+
+A plot of Debt to income ratio vs Credit Score Range.
+
+
+
+We make use of Facet wrap o depict the deliquencies of the customers based on their employment status. The final plot we get is as shown below:
+
+
+```{r }
+ggplot(aes(x = DelinquenciesLast7Years, y = AmountDelinquent),
+       data = filter(pld, AmountDelinquent > 0 & 
+                            EmploymentStatus != "Other" )) +
+  geom_point(alpha = 0.2) +
+  xlim(0, quantile(pld$DelinquenciesLast7Years, 0.99, na.rm = T)) +
+  ylim(0, quantile(pld$AmountDelinquent, 0.99, na.rm = T)) +
+  facet_wrap(~EmploymentStatus)
+
+```
+
+
+We can see more dots on the employed customers box. This is because Prosper offers loan to cadidates who are employed.
+People who are either un-employed or having part time jobs have low deliquencies and are thus rejected for loans most of the times.
+
+
+
+People may invest in groups for loans. This is a rare situation in most of the banks. Let us have a look at the number of investors for loans through this graph:
+
+
+```{r }
+ggplot(pld, aes(Investors)) +
+  geom_histogram(color = 'black', fill = '#007EE5', binwidth = 50) +
+  ggtitle('Number of Loans by Investor') +
+  xlab('Number of Investors') +
+  ylab('Number of Loans') +
+  xlim(0,500)
+```
+
+
+Number of investors are below 150 for most loans.
+
+
+Corelation:-
+
+Let us have a look at the correlation between credit score given by the central authority and the prosper score given by the company:
+
+
+```{r }
+cor.test(pld$CreditScoreRangeLower,pld$ProsperScore)
+```
+
+
+The correlation between the two is 0.37
+By this we can come to a conclusion that there is not much of a relation between the credit score and the prosper score.
+prosper score thus depends on different factors and is computed differently when compared to the credit score.
+
+
+Correlation between Lender yield and Debt to income ratio:
+
+
+```{r }
+cor.test(pld$LenderYield,pld$DebtToIncomeRatio)
+```
+
+
+The correlation is just 0.12
+Lender yeild is thus not quite related to debt to income ratio and it is evident from the following graph.
+
+
+```{r }
+ggplot(data=pld,aes(x=LenderYield, y=DebtToIncomeRatio))+
+  ylim(0, 1)+
+  geom_point(alpha=0.05)+
+  geom_smooth(method = 'lm', color= 'orange')
+```
+
+
+```{r }
+cor(pld$BorrowerRate,pld$LenderYield)
+```
+
+
+
+From this it is evident that the borrower rate is almost directly proportional to the Lender Yield. The graph depicts the same:
+
+
+
+```{r }
+ggplot(data=pld,aes(x=BorrowerRate, y=LenderYield))+
+  geom_line(alpha=1/50)+
+  geom_smooth(method = 'lm', color= 'blue')
+
+```
+
+
+Prosper score vs Number of investors:
+
+
+```{r }
+ggplot(aes(x = as.factor(ProsperScore), y = Investors), 
+       data = pld) + 
+  geom_boxplot() +
+  ggtitle("Prosper Score vs Number of Investors") +
+  xlab("Prosper Score")
+  ylab("Investors")
+```
+
+
+The box plots also depict the median number of investors for the borrowers with certain prosper scores.
+
+We can see from the plot that people having higher prosper scores have more number of investors for the loan.
+
+
+A Comparison of the prosper scores of the borrowers with and without own homes:
+
+
+```{r }
+ggplot(aes(factor(IsBorrowerHomeowner), 
+           ProsperScore), 
+       data = pld) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = '#009E73')+
+  stat_summary(fun.y = 'mean', 
+               geom = 'point', 
+               color = '#D55E00', 
+               shape = 8, 
+               size = 4)+
+  ylab('Prosper Score') +
+  xlab('Home Owner') +
+  ggtitle('Home owner by prosper score')
+```
+
+
+The graphs shows that there is not much difference in the median prosper scores of the borrowers with and without own homes. The customers with own homes have a slightly higher prosper score compared to the ones who dont.
+
+
+Here is another plot comparing the delinquencies of the borrowers with and without their own homes:
+
+
+```{r }
+ggplot(aes(x=CurrentDelinquencies, y=..count../sum(..count..)), 
+       data = subset(pld, !is.na(IsBorrowerHomeowner))) +
+  geom_freqpoly(aes(color = IsBorrowerHomeowner)) + 
+  xlab('Current Delinquencies') + 
+  ylab('Percentage of Borrowers with current delinquencies') +
+  ggtitle('Current delinquencies by home owner') 
+```
+
+
+ percentage of delinquencies remain almost the same for both the parties.
+
+
+Number of Recommendations for the borrowers:
+
+
+```{r }
+pld %>%
+    group_by(Recommendations) %>%
+    summarise(n = n()) %>%
+    ggplot(aes(x = Recommendations, y = n)) +
+    geom_bar(stat = 'identity', position="dodge") +
+    ylab("Number of borrowers") +
+    xlab("Number of Recommendations") +
+    scale_x_continuous(breaks = unique(pld$Recommendations))
+```
+
+
+The Loans are granted for most people without any recommendations.
+
+
+MultiVariate analysis:
+
+We create boxbplot to show the variation in the loan amounts granted to the borrowers over years along with factor(term).
+
+
+```{r }
+pld$LoanOriginationYear <- 
+  format(as.Date(pld$LoanOriginationDate, format="%Y-%m-%d"),"%Y")
+
+ggplot(aes(x = LoanOriginationYear, 
+           y = LoanOriginalAmount, 
+           fill = factor(Term)),
+       data = pld) +
+  geom_boxplot()+
+  ggtitle("Loans by Year") +
+  labs(x = "Loan origination year", y = "Loan Original Amount")
+```
+
+
+The Loan amount granted have increase in the past few years. In the year 2014, the median loan granted has increased compared to the last 5 years.
+The factor or term required for repayment of the loan has also lengthened.
+The sizes of the boxes have also increased over the years, indicating that more number of people are granted with loans nowadays compared to 5 years ago.
+
+
+
+We now take a look at the different types of people who apply for loan. We look at the background of the borrower and note down their occupations. We then make analysis based on the occupations of the borrowers:
+
+
+```{r }
+pld$Group_By_Occupation <- factor(pld$Occupation)
+levels(pld$Group_By_Occupation) <- list(
+  Student=c("Student - College Graduate Student",
+            "Student - College Senior", 
+            "Student - Community College",
+            "Student - College Freshman",
+            "Student - College Junior",
+            "Student - College Sophomore",
+            "Student - Technical School"), 
+  Medical=c("Doctor", "Nurse's Aide",
+                   "Nurse (RN)",
+                   "Nurse (LPN)",
+                   "Dentist",
+                   "Pharmacist",
+                   "Medical Technician",
+                   "Psychologist"),
+  Sales=c("Sales - Commission",
+          "Sales - Retail",
+          "Car Dealer",
+          "Realtor"),
+  Service=c("Food Service Management",
+            "Food Service",
+            "Postal Service",
+            "Social Worker",
+            "Truck Driver",
+            "Bus Driver",
+            "Retail Management",
+            "Waiter/Waitress",
+            "Flight Attendant",
+            "Clerical",
+            "Religious",
+            "Clergy"),
+  Laborer=c("Construction",
+            "Laborer",
+            "Skilled Labor",
+            "Landscaping",
+            "Homemaker",
+            "Fireman",
+            "Executive",
+            "Teacher's Aide",
+            "Computer Programmer",
+            "Administrative Assistant",
+            "Professional",
+            "Accountant/CPA",
+            "Tradesman - Carpenter",
+            "Tradesman - Mechanic",
+            "Tradesman - Electrician",
+            "Tradesman - Plumber",
+            "Pilot - Private/Commercial"),
+  HigherEduJobs=c("Architect",
+                 "Biologist",
+                 "Engineer - Electrical",
+                 "Engineer - Mechanical",
+                 "Engineer - Chemical",
+                 "Judge", "Teacher",
+                 "Scientist",
+                 "Professor",
+                 "Attorney", "Analyst", "Accountant/CPA"
+  ),
+  CivilService=c("Civil Service",
+                 "Military Officer",
+                 "Police Officer/Correction Officer",
+                 "Military Enlisted"),
+  Other=c("Other", "")
+)
+```
+
+
+From this we take a sample of students as students are the ones who are loan applications have been on the rise.
+
+We make a plot of Estimated return vs Estimated loss for the students keeping their income range in consideration:
+
+
+```{r }
+ggplot(aes(EstimatedReturn, EstimatedLoss), 
+       data=subset(pld, Group_By_Occupation == 'Student' 
+                   & !is.na(Group_By_Occupation)
+                   & !is.na(IncomeRange)
+                   & IncomeRange != 'Not displayed'
+                   & IncomeRange != 'Not employed'))+
+  geom_point(aes(colour=IncomeRange, size=IncomeRange))+
+  labs(x="Estimated Return", y = "Estimated Loss") +
+  ggtitle('Estimated loss and estimated return by income range of students')
+```
+
+
+It is evident that students who earn less have more Estimated loss due to the interest paid in the loans.
+Prosper receives less return on the students who have an annual income range of over $50,000.
+
+
+
+Now lets have a look at the occupation of the borrowers who take the most number of loans.
+
+
+```{r }
+ggplot(data=subset(pld,
+                   Group_By_Occupation != 'Other' &
+                   !is.na(Group_By_Occupation)),
+       x=Group_By_Occupation, aes(Group_By_Occupation)) +
+  geom_bar(colour='#24323e', fill='#02ccba')+
+  ggtitle("Borrowers by Occupation") +
+  labs(x="", y = "Number of loans") +
+  theme(axis.text.x=element_text(angle=45,hjust=1,vjust=0.5))
+```
+
+
+We see that most number of people who apply for loans are laborers. This is for them to make trades and make profit out of it.
+And it is surprising to see that Students borrow the least number of loans.
+
+
+Let us see if there is any relation between the Employment duration and the Loan Status.
+Generally people who are employed longer have completed their loan terms.
+Let us see what the data has to say:
+
+
+```{r }
+sub <- pld[,c("EmploymentStatusDuration", "LoanStatus")]
+sub <- sub[-which(is.na(sub[,1]) | is.na(sub[,2])),]
+sub <- sub[-which(sub[,1] %in% boxplot(sub[,1], plot=F)$out),]
+
+
+ggplot() + geom_histogram(data=sub, aes(x=EmploymentStatusDuration, 
+                                        fill=LoanStatus),
+                          binwidth=24) +
+  xlab("Employment Duration in Months") +
+  ylab("Count") + 
+  ggtitle("Length Of Employment and Loan Status") + 
+  theme_bw() + theme(text=element_text(size=12))
+```
+
+
+We can infer the following from the graph:
+
+1. People apply for loans in the beginning stage after employment.
+2. Around one quarter of the people pay back the loan amount in  a short span of 100 months or less.
+3. Many people take loans for long term periods and continue to repay their loans. 
+The 3rd statement above is beneficial for the banks as long term repayments give more credit to the banks.
+
+
+Here is the USA map showing the different states and the percentage of people defaulted in them.
+
+
+
+```{r }
+library(maps)
+
+library(mapproj)
+states <- map_data("state")
+status <- function(x) {
+  l <- length(which(pld[which(pld$BorrowerState == x), "LoanStatus"] == "Defaulted"))
+  l / length(which(pld$BorrowerState == x))
+}
+s <- sapply(state.abb, status)
+s <- data.frame("region"=tolower(state.name), "PercentDefaulted"=s)
+map_df <- merge(states, s, by="region", all.x=T)
+map_df <- map_df[order(map_df$order),]
+
+ggplot(map_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(aes(fill=PercentDefaulted)) +
+  geom_path() + 
+  scale_fill_gradient(low="white", high="red", 
+                      na.value="white") +
+  coord_map() + theme_bw() + 
+  ggtitle("Default Rate based on states of USA") + 
+  theme(text=element_text(size=14)) + xlab("") + ylab("")
+```
+
+
+From the map we can make following conclusions:
+
+1. South Dakota and New mexico have more percentage of defaulters.
+2. North Dakota and Iowa have the least number of defaulters.
+
+It is important to understand the reason why the people borrow loans. Generally people buy loans to grow their business, buy a new car, build houses and clear their debts. Let us see what the prosper data set has to say:
+
+
+Final Plot 1:
+
+
+```{r }
+ggplot(data = pld,
+       aes(x = ProsperRating..numeric.,
+           y = BorrowerRate,
+           color = factor(Term))) +
+  geom_point(alpha = 0.1, position = position_jitter()) +
+  geom_smooth(method = "lm") +
+  labs(title = "Borrower Rate vs. Prosper Rating by Term",
+       x = "Prosper Rating",
+       y = "Borrower Rate") +
+  scale_y_continuous(breaks = seq(0, .5, .05))
+```
+
+
+Summary 1:
+
+This plot of the BorrowerRate vs. ProsperRating shows that a lower interest rate is expected for a borrower with a better credit rating. When grouping by the loan term in months, the interest rate tends to be lower for shorter terms.
+
+
+
+Final Plot 2:
+
+
+
+```{r }
+ggplot(pld, aes(x = CreditScoreRangeUpper)) + 
+  geom_histogram(aes(y = ..count..), binwidth = 20, fill = '#05DBF2',
+        color='black', position="identity") + 
+  scale_y_sqrt() +
+        labs(x= 'Upper Range of Credit Score', y='Number of borrowers', 
+             title="Distribution of Credit Score Range (Upper)")
+summary(pld$CreditScoreRangeLower)
+summary(pld$CreditScoreRangeUpper)
+```
+
+
+Summary 2:
+Median Credit score range of a borrower is 680.0 to 699.0 and Mean ranges from 685.6 to 704.6. The max score is 880 to 899 and there are 133 borrowers with very low credit score (0-19).
+
+
+
+Final Plot 3:
+
+
+```{r }
+# Referred link: https://chrisalbon.com/r-stats/scatterplot-with-ellipses-by-group.html
+
+ggplot(aes(x = LoanOriginalAmount, fill = LoanStatus), data = pld) +
+  facet_wrap(~Term) +
+  geom_histogram(aes(color = LoanStatus)) +
+  scale_fill_brewer(type = 'qual') +
+  theme(axis.text.x = element_text(angle=45,hjust=0.5,vjust=0.5))+
+  labs(x = "Loan Original Amount (USD)") +
+  ggtitle("Histogram of loan Amounts by status and terms")
+```
+
+
+In the plot above we can see that most of the plots are taken with a terma of 36 month. Even though the amounts are not that big. This may be because until 2009 there where only loans with a term of 36 month. This may also explain why the loan status is completed or charged off for the most of the loans under 5000. We can also see that short term loans are not often used at the moment. People prefer mid or long term loans.
+
+
+
+
+Reflection:
+
+The Prosper Loans dataset contains a wealth of information about 114K loans given between Nov 2005 and Mar 2014.
+
+I began my investigation by going through each of the variables. I then categorized them into variables that are useful and should be taken into consideration and the ones that not be taken under consideration. 
+
+I continued exploring individual variables that I had noticed, like the loan amount, term, interest rates, credit scores, loan status, and loan purposes. At first I leaned towards the relationship between the interest rates and the credit score, but because I found it so evident I decided to give it another thought and I read again the definition of the variables. I thought backwards, like a borrower, and decided to explore what would give me a good or bad credit rating that would deserve me a lower interest rate.
+
+Then I went on to decide the types of plots that would be apt for depicting the models in a clear and understandable way. I went through a few difficulties in plotting the models, especially when i took 3 variables into consideration. Another difficulty was that some of the variables had no corelation and it was difficult to express them in a graph and derive the results.
+
+
+Summary:
+
+In most of the cases people take loans for their own personal needs. In 10% of the case people borrow loans to buy automotives.
+8% of the loans are borrowed to make payments.
+6.2% of loans are taken for Home Improvement.
+Remaining loans are taken of other specific reasons mentioned in the graph.
+
+Thus , an analysis has been made on the Prosper Loan Data Set. We saw on what basis the bank grants loans, the occupation of customers, the reason why they need loans and when the banks make a profit out of it.
+
+
